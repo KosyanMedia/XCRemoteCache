@@ -148,8 +148,12 @@ module CocoapodsXCRemoteCacheModifier
 
           # Move prebuild (last element) to the position before compile sources phase (to make it real 'prebuild')
           if !existing_prebuild_script 
-            compile_phase_index = target.build_phases.index(target.source_build_phase)
-            target.build_phases.insert(compile_phase_index, target.build_phases.delete(prebuild_script))
+            begin
+              compile_phase_index = target.build_phases.index(target.source_build_phase)
+              target.build_phases.insert(compile_phase_index, target.build_phases.delete(prebuild_script))
+            rescue
+            ensure
+            end
           end
         elsif mode == 'producer' || mode == 'producer-fast'
           # Delete existing prebuild build phase (to support switching between modes)
