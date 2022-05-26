@@ -456,6 +456,7 @@ module CocoapodsXCRemoteCacheModifier
           # Enabled/disable XCRemoteCache for the main (user) project
           begin
             prepare_result = YAML.load`#{xcrc_location_absolute}/xcprepare --configuration #{check_build_configuration} --platform #{check_platform}`
+            Pod::UI.puts prepare_result
             unless prepare_result['result'] || mode != 'consumer'
               # Uninstall the XCRemoteCache for the consumer mode
               disable_xcremotecache(user_project, installer_context.pods_project)
