@@ -432,10 +432,11 @@ module CocoapodsXCRemoteCacheModifier
             # all paths in .rcinfo are relative to the root so paths used in Pods.xcodeproj need to be aligned
             pods_path = Pathname.new(pods_proj_directory)
             root_path = Pathname.new(user_proj_directory)
-            root_path_to_pods = root_path.relative_path_from(pods_path)
+            remote_commit_file_path = "#{root_path_to_pods}/#{remote_commit_file}"
+            remote_commit_file_path = remote_commit_file if remote_commit_file.start_with?('/')
             
             pods_rcinfo = root_rcinfo.merge({
-              'remote_commit_file' => "#{root_path_to_pods}/#{remote_commit_file}",
+              'remote_commit_file' => remote_commit_file_path,
               'xccc_file' => "#{root_path_to_pods}/#{xccc_location}"
             })
             save_rcinfo(pods_rcinfo, pods_proj_directory)
