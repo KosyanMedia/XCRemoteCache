@@ -129,7 +129,7 @@ module CocoapodsXCRemoteCacheModifier
           config.build_settings['LD'] = ["$SRCROOT/#{srcroot_relative_xc_location}/xcld"]
 
           config.build_settings['XCREMOTE_CACHE_FAKE_SRCROOT'] = fake_src_root
-          config.build_settings['XCRC_PLATFORM_PREFERRED_ARCH'] = ["$(LINK_FILE_LIST_$(CURRENT_VARIANT)_$(PLATFORM_PREFERRED_ARCH):dir:standardizepath:file:default=arm64)"]
+          config.build_settings['XCRC_PLATFORM_PREFERRED_ARCH'] = ["$(LINK_FILE_LIST_$(CURRENT_VARIANT)_$(PLATFORM_PREFERRED_ARCH):dir:standardizepath:file:default=x86_64)"]
           config.build_settings[XCRC_COOCAPODS_ROOT_KEY] = ["$SRCROOT/#{srcroot_relative_project_location}"]
           debug_prefix_map_replacement = '$(SRCROOT' + ':dir:standardizepath' * repo_distance + ')'
           add_cflags!(config.build_settings, '-fdebug-prefix-map', "#{debug_prefix_map_replacement}=$(XCREMOTE_CACHE_FAKE_SRCROOT)")
