@@ -1,8 +1,7 @@
 # ================================
 # Build image
 # ================================
-FROM nginxinc/nginx-unprivileged
-VOLUME /usr/share/nginx/html
+FROM nginx:latest
 
 COPY mime.types /etc/nginx/mime.types
 COPY nginx.conf /etc/nginx/nginx.conf
