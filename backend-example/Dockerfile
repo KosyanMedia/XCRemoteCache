@@ -1,8 +1,11 @@
 # ================================
 # Build image
 # ================================
-FROM nginx:1.21.1
+FROM nginx:latest
+VOLUME [ "/cache" ]
 
+COPY mime.types /etc/nginx/mime.types
 COPY nginx.conf /etc/nginx/nginx.conf
-RUN mkdir -p /tmp/cache
-RUN chown -R nginx:nginx /tmp/cache
+
+EXPOSE 8765
+ENTRYPOINT ["nginx", "-g", "daemon off;"]
