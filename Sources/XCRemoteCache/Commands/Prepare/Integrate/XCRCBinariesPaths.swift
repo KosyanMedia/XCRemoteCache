@@ -26,7 +26,6 @@ struct XCRCBinariesPaths {
     let swiftc: URL
     let libtool: URL
     let ld: URL
-    let ldplusplus: URL
     let prebuild: URL
     let postbuild: URL
 }

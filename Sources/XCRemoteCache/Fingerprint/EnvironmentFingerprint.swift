@@ -52,9 +52,7 @@ class EnvironmentFingerprintGenerator {
         }
         try fill(envKeys: Self.defaultEnvFingerprintKeys + customFingerprintEnvs)
         try generator.append(version)
-        let result = try generator.generate()
-        generatedFingerprint = result
-        return result
+        return try generator.generate()
     }
 
     /// Creates a fingerprint of the environemtn, by hashing all ENVs specified in keys

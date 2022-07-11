@@ -196,9 +196,7 @@ Configure Xcode targets that **should use** XCRemoteCache:
 * `SWIFT_EXEC` - location of `xcprepare` (e.g. `xcremotecache/xcswiftc`)
 * `LIBTOOL` - location of `xclibtool` (e.g. `xcremotecache/xclibtool`)
 * `LD` - location of `xcld` (e.g. `xcremotecache/xcld`)
-* `LDPLUSPLUS` - location of `xcldplusplus` (e.g. `xcremotecache/xcldplusplus`)
 * `XCRC_PLATFORM_PREFERRED_ARCH` - `$(LINK_FILE_LIST_$(CURRENT_VARIANT)_$(PLATFORM_PREFERRED_ARCH):dir:standardizepath:file:default=arm64)`
-* `SWIFT_USE_INTEGRATED_DRIVER` - `NO` (required in Xcode 14.0+)
 
 <details>
   <summary>Screenshot</summary>
@@ -267,7 +265,7 @@ $ xcremotecache/xcprepare mark --configuration Debug --platform iphonesimulator
 
 That command creates an empty file on a remote server which informs that for given sha, configuration, platform, Xcode versions etc. all artifacts are available.
 
-_Note that for the `producer` mode, the prebuild build phase and `xccc`, `xcld`, `xcldplusplus`, `xclibtool` wrappers become no-op, so it is recommended to not add them for the `producer` mode._
+_Note that for the `producer` mode, the prebuild build phase and `xccc`, `xcld`, `xclibtool` wrappers become no-op, so it is recommended to not add them for the `producer` mode._
 
 ## A full list of configuration parameters:
 
@@ -418,7 +416,6 @@ Note: This setup is not recommended and may not be supported in future XCRemoteC
 * Swift Package Manager (SPM) dependencies are not supported. _Because SPM does not allow customizing Build Settings, XCRemoteCache cannot specify `clang` and `swiftc` wrappers that control if the local compilation should be skipped (cache hit) or not (cache miss)_
 * Filenames with `_vers.c` suffix are reserved and cannot be used as a source file
 * All compilation files should be referenced via the git repo root. Referencing `/AbsolutePath/someOther.swift` or `../../someOther.swift` that resolve to the location outside of the git repo root is prohibited.
-* The new Swift driver (introduced by default in Xcode 14.0) is not supported and has to be disabled when using XCRemoteCache
 
 ## FAQ
 

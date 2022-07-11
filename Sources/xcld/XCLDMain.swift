@@ -21,7 +21,7 @@ import Foundation
 import XCRemoteCache
 
 /// Wrapper for a `LD` program that copies the dynamic executable from a cached-downloaded location
-/// Fallbacks to a standard `clang` when the Remote cache is not applicable (e.g. modified sources)
+/// Fallbacks to a standard `clang` when the Ramote cache is not applicable (e.g. modified sources)
 public class XCLDMain {
     public func main() {
         let args = ProcessInfo().arguments
