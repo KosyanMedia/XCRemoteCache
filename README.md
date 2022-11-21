@@ -8,7 +8,7 @@ _XCRemoteCache is a remote cache tool for Xcode projects. It reuses target artif
 [![Build Status](https://github.com/spotify/XCRemoteCache/workflows/CI/badge.svg)](https://github.com/spotify/XCRemoteCache/workflows/CI/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Slack](https://slackin.spotify.com/badge.svg)](https://slackin.spotify.com)
-[![Docs](https://spotify.github.io/XCRemoteCache/documentation/xcremotecache/)](https://github.com/spotify/XCRemoteCache/workflows/Docs/badge.svg)
+[![Docs](https://github.com/spotify/XCRemoteCache/workflows/Docs/badge.svg)](https://spotify.github.io/XCRemoteCache/documentation/xcremotecache/)
 
 - [How and Why?](#how-and-why)
   * [Accurate target input files](#accurate-target-input-files)
@@ -267,6 +267,41 @@ That command creates an empty file on a remote server which informs that for giv
 
 _Note that for the `producer` mode, the prebuild build phase and `xccc`, `xcld`, `xclibtool` wrappers become no-op, so it is recommended to not add them for the `producer` mode._
 
+##### 7. Generalize `-Swift.h` (Optional only if using static library with a bridging header with public `NS_ENUM` exposed from ObjC)
+
+If a static library target contains a mixed target with a bridging header exposing an enum from ObjC in a public Swift API, your custom script that moves `*-Swift.h` to the shared location, it should also move `*-Swift.h.md5` next to it.
+
+Example:
+
+##### Existing script (Before):
+
+```shell
+ditto "${SCRIPT_INPUT_FILE_0}" "${SCRIPT_OUTPUT_FILE_0}"
+```
+
+where
+* `SCRIPT_INPUT_FILE_0="$(DERIVED_SOURCES_DIR)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME)"`
+* `SCRIPT_OUTPUT_FILE_0="$(BUILT_PRODUCTS_DIR)/include/$(PRODUCT_MODULE_NAME)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME)"`
+
+##### Correct script (After):
+
+```shell
+ditto "${SCRIPT_INPUT_FILE_0}" "${SCRIPT_OUTPUT_FILE_0}"
+[ -f "${SCRIPT_INPUT_FILE_1}" ] && ditto "${SCRIPT_INPUT_FILE_1}" "${SCRIPT_OUTPUT_FILE_1}" || rm "${SCRIPT_OUTPUT_FILE_1}"
+```
+
+where
+* `SCRIPT_INPUT_FILE_0="$(DERIVED_SOURCES_DIR)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME)"`
+* `SCRIPT_INPUT_FILE_1="$(DERIVED_SOURCES_DIR)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME).md5"`
+* `SCRIPT_OUTPUT_FILE_0="$(BUILT_PRODUCTS_DIR)/include/$(PRODUCT_MODULE_NAME)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME)"`
+* `SCRIPT_OUTPUT_FILE_1="$(BUILT_PRODUCTS_DIR)/include/$(PRODUCT_MODULE_NAME)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME).md5"`
+
+Note: This step is not required if at least one of these is true:
+
+* you build a framework (not a static library)
+* you don't expose `NS_ENUM` type from ObjC to Swift via a bridging header
+
+
 ## A full list of configuration parameters:
 
 | Property | Description | Default | Required |
@@ -296,6 +331,8 @@ _Note that for the `producer` mode, the prebuild build phase and `xccc`, `xcld`,
 | `stats_dir` | Directory where all XCRemoteCache statistics (e.g. counters) are stored | `~/.xccache` | ⬜️ |
 | `download_retries` | Number of retries for download requests | `0` | ⬜️ |
 | `upload_retries` | Number of retries for upload requests | `3` | ⬜️ |
+| `retry_delay` | Delay between retries in seconds | `10` | ⬜️ |
+| `upload_batch_size` | Maximum number of simultaneous requests. 0 means no limits | `0` | ⬜️ |
 | `request_custom_headers` | Dictionary of extra HTTP headers for all remote server requests | `[]` | ⬜️ |
 | `thin_target_mock_filename` | Filename (without an extension) of the compilation input file that is used as a fake compilation for the forced-cached target (aka thin target) | `standin` | ⬜️ |
 | `focused_targets` | A list of all targets that are not thinned. If empty, all targets are meant to be non-thin | `[]` | ⬜️ |

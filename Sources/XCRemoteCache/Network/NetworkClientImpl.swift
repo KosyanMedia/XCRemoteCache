@@ -29,12 +29,14 @@ class NetworkClientImpl: NetworkClient {
     private let session: URLSession
     private let fileManager: FileManager
     private let maxRetries: Int
+    private let retryDelay: TimeInterval
     private let awsV4Signature: AWSV4Signature?
 
-    init(session: URLSession, retries: Int, fileManager: FileManager, awsV4Signature: AWSV4Signature?) {
+    init(session: URLSession, retries: Int, retryDelay: TimeInterval, fileManager: FileManager, awsV4Signature: AWSV4Signature?) {
         self.session = session
         self.fileManager = fileManager
-        maxRetries = retries
+        self.maxRetries = retries
+        self.retryDelay = retryDelay
         self.awsV4Signature = awsV4Signature
     }
 
@@ -75,7 +77,12 @@ class NetworkClientImpl: NetworkClient {
     func download(_ url: URL, to location: URL, completion: @escaping (Result<Void, NetworkClientError>) -> Void) {
         var request = URLRequest(url: url)
         setupAuthenticationSignatureIfPresent(&request)
-        makeDownloadRequest(request, output: location, completion: completion)
+        makeDownloadRequest(
+            request,
+            output: location,
+            retries: maxRetries,
+            completion: completion
+        )
     }
 
     func upload(_ file: URL, as url: URL, completion: @escaping (Result<Void, NetworkClientError>) -> Void) {
@@ -123,7 +130,7 @@ class NetworkClientImpl: NetworkClient {
         dataTask.resume()
     }
 
-    private func makeDownloadRequest(_ request: URLRequest, output: URL, completion: @escaping (Result<Void, NetworkClientError>) -> Void) {
+    private func makeDownloadRequest(_ request: URLRequest, output: URL, retries: Int, completion: @escaping (Result<Void, NetworkClientError>) -> Void) {
         guard fileManager.fileExists(atPath: output.path) == false else {
             infoLog("Download file found in the destination, skipping download.")
             completion(.success(()))
@@ -133,6 +140,17 @@ class NetworkClientImpl: NetworkClient {
         let dataTask = session.downloadTask(with: request) { [fileManager] fileURL, _, error in
             guard let fileURL = fileURL else {
                 let networkError = error.map(NetworkClientError.build) ?? .inconsistentSession
+                if retries > 0 {
+                    infoLog("Download request failed with \(networkError). Left retries: \(retries).")
+                    self.retryDownload(
+                        request,
+                        output: output,
+                        retries: retries,
+                        completion: completion,
+                        after: self.retryDelay
+                    )
+                    return
+                }
                 errorLog("Download request failed: \(networkError)")
                 completion(.failure(networkError))
                 return
@@ -173,7 +191,13 @@ class NetworkClientImpl: NetworkClient {
             if let error = responseError {
                 if retries > 0 {
                     infoLog("Upload request failed with \(error). Left retries: \(retries).")
-                    self.makeUploadRequest(request, input: input, retries: retries - 1, completion: completion)
+                    self.retryUpload(
+                        request,
+                        input: input,
+                        retries: retries,
+                        completion: completion,
+                        after: self.retryDelay
+                    )
                     return
                 }
                 errorLog("Upload request failed: \(error)")
@@ -183,6 +207,30 @@ class NetworkClientImpl: NetworkClient {
             }
         }
         dataTask.resume()
+    }
+
+    private func retryUpload(_ request: URLRequest, input: URL, retries: Int, completion: @escaping (Result<Void, NetworkClientError>) -> Void, after: TimeInterval) {
+        DispatchQueue.global().asyncAfter(deadline: .now() + after) { [weak self] in
+            guard let self = self else { return }
+            self.makeUploadRequest(
+                request,
+                input: input,
+                retries: retries - 1,
+                completion: completion
+            )
+        }
+    }
+
+    private func retryDownload(_ request: URLRequest, output: URL, retries: Int, completion: @escaping (Result<Void, NetworkClientError>) -> Void, after: TimeInterval) {
+        DispatchQueue.global().asyncAfter(deadline: .now() + after) { [weak self] in
+            guard let self = self else { return }
+            self.makeDownloadRequest(
+                request,
+                output: output,
+                retries: retries - 1,
+                completion: completion
+            )
+        }
     }
 }
 

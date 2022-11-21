@@ -25,7 +25,7 @@ namespace :e2e do
     Stats = Struct.new(:hits, :misses, :hit_rate)
 
     # run E2E tests
-    task :run => [:run_cocoapods]
+    task :run => [:run_cocoapods, :run_standalone]
 
     # run E2E tests for CocoaPods-powered projects
     task :run_cocoapods do
@@ -37,6 +37,50 @@ namespace :e2e do
         for podfile_path in Dir.glob('e2eTests/**/*.Podfile')
             run_cocoapods_scenario(podfile_path)
         end
+        # Revert all side effects
+        clean
+    end
+
+    # run E2E tests for standalone (non-CocoaPods) projects
+    task :run_standalone do
+        clean_server
+        start_nginx
+        configure_git
+        # Prepare binaries for the standalone mode
+        prepare_for_standalone(E2E_STANDALONE_SAMPLE_DIR)
+
+        puts 'Building standalone producer...'
+        ####### Producer #########
+        Dir.chdir(E2E_STANDALONE_SAMPLE_DIR) do
+            clean_git
+            # Run integrate the project
+            system("pwd")
+            system("#{XCRC_BINARIES}/xcprepare integrate --input StandaloneApp.xcodeproj --mode producer --final-producer-target StandaloneApp")
+            # Build the project to fill in the cache
+            build_project(nil, "StandaloneApp.xcodeproj", 'StandaloneApp')
+            system("#{XCRC_BINARIES}/xcprepare stats --reset --format json")
+        end
+
+        puts 'Building standalone consumer...'
+
+        ####### Consumer #########
+        # new dir to emulate different srcroot
+        consumer_srcroot = "#{E2E_STANDALONE_SAMPLE_DIR}_consumer"
+        system("mv #{E2E_STANDALONE_SAMPLE_DIR} #{consumer_srcroot}")
+        at_exit { puts("reverting #{E2E_STANDALONE_SAMPLE_DIR}"); system("mv #{consumer_srcroot} #{E2E_STANDALONE_SAMPLE_DIR}") }
+
+        prepare_for_standalone(consumer_srcroot)
+        Dir.chdir(consumer_srcroot) do
+            system("#{XCRC_BINARIES}/xcprepare integrate --input StandaloneApp.xcodeproj --mode consumer")
+            build_project(nil, "StandaloneApp.xcodeproj", 'StandaloneApp', {'derivedDataPath' => "#{DERIVED_DATA_PATH}_consumer"})
+            valide_hit_rate
+
+            puts 'Building standalone consumer with local change...'
+            # Extra: validate local compilation of the Standalone ObjC code
+            system("echo '' >> StandaloneApp/StandaloneObjc.m")
+            build_project(nil, "StandaloneApp.xcodeproj", 'StandaloneApp', {'derivedDataPath' => "#{DERIVED_DATA_PATH}_consumer_local"})
+        end
+
         # Revert all side effects
         clean
     end
