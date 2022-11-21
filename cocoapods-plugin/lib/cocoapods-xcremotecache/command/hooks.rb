@@ -519,6 +519,7 @@ module CocoapodsXCRemoteCacheModifier
           begin
             # TODO: Do not compile xcc again. `xcprepare` compiles it in pre-install anyway 
             prepare_result = YAML.load`#{xcrc_location_absolute}/xcprepare --configuration #{check_build_configuration} --platform #{check_platform}`
+
             Pod::UI.puts prepare_result
             unless prepare_result['result'] || mode != 'consumer'
               # Uninstall the XCRemoteCache for the consumer mode
