@@ -189,8 +189,13 @@ module CocoapodsXCRemoteCacheModifier
         postbuild_script.dependency_file = "$(TARGET_TEMP_DIR)/postbuild.d"
         # Move postbuild (last element) to the position after compile sources phase (to make it real 'postbuild')
         if !existing_postbuild_script 
-          compile_phase_index = target.build_phases.index(target.source_build_phase)
-          target.build_phases.insert(compile_phase_index + 1, target.build_phases.delete(postbuild_script))
+          begin
+            compile_phase_index = target.build_phases.index(target.source_build_phase)
+            target.build_phases.insert(compile_phase_index + 1, target.build_phases.delete(postbuild_script))
+          rescue
+          ensure
+          end
+          
         end
 
         # Mark a sha as ready for a given platform and configuration when building the final_target
