@@ -64,7 +64,8 @@ module CocoapodsXCRemoteCacheModifier
           'prettify_meta_files' => false,
           'fake_src_root' => "/#{'x' * 10 }",
           'disable_certificate_verification' => false,
-          'custom_rewrite_envs' => []
+          'custom_rewrite_envs' => [],
+          'swift_use_integrated_driver' => false
         }
         @@configuration.merge! default_values.select { |k, v| !@@configuration.key?(k) }
         # Always include XCRC_COOCAPODS_ROOT_KEY in custom_rewrite_envs
@@ -128,6 +129,7 @@ module CocoapodsXCRemoteCacheModifier
           config.build_settings['LIBTOOL'] = ["$SRCROOT/#{srcroot_relative_xc_location}/xclibtool"]
           config.build_settings['LD'] = ["$SRCROOT/#{srcroot_relative_xc_location}/xcld"]
 
+          config.build_settings['SWIFT_USE_INTEGRATED_DRIVER'] =  @@configuration['swift_use_integrated_driver'] == true ? 'YES' : 'NO'
           config.build_settings['XCREMOTE_CACHE_FAKE_SRCROOT'] = fake_src_root
           config.build_settings['XCRC_PLATFORM_PREFERRED_ARCH'] = ["$(LINK_FILE_LIST_$(CURRENT_VARIANT)_$(PLATFORM_PREFERRED_ARCH):dir:standardizepath:file:default=x86_64)"]
           config.build_settings[XCRC_COOCAPODS_ROOT_KEY] = ["$SRCROOT/#{srcroot_relative_project_location}"]
