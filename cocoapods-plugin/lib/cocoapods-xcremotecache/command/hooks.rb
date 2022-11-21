@@ -157,8 +157,12 @@ module CocoapodsXCRemoteCacheModifier
 
           # Move prebuild (last element) to the position before compile sources phase (to make it real 'prebuild')
           if !existing_prebuild_script 
-            compile_phase_index = target.build_phases.index(target.source_build_phase)
-            target.build_phases.insert(compile_phase_index, target.build_phases.delete(prebuild_script))
+            begin
+              compile_phase_index = target.build_phases.index(target.source_build_phase)
+              target.build_phases.insert(compile_phase_index, target.build_phases.delete(prebuild_script))
+            rescue
+            ensure
+            end
           end
         elsif mode == 'producer' || mode == 'producer-fast'
           # Delete existing prebuild build phase (to support switching between modes)
@@ -499,9 +503,11 @@ module CocoapodsXCRemoteCacheModifier
             pods_path = Pathname.new(pods_proj_directory)
             root_path = Pathname.new(user_proj_directory)
             root_path_to_pods = root_path.relative_path_from(pods_path)
+            remote_commit_file_path = "#{root_path_to_pods}/#{remote_commit_file}"
+            remote_commit_file_path = remote_commit_file if remote_commit_file.start_with?('/')
             
             pods_rcinfo = root_rcinfo.merge({
-              'remote_commit_file' => "#{root_path_to_pods}/#{remote_commit_file}",
+              'remote_commit_file' => remote_commit_file_path,
               'xccc_file' => "#{root_path_to_pods}/#{xccc_location}"
             })
             save_rcinfo(pods_rcinfo, pods_proj_directory)
@@ -513,6 +519,7 @@ module CocoapodsXCRemoteCacheModifier
           begin
             # TODO: Do not compile xcc again. `xcprepare` compiles it in pre-install anyway 
             prepare_result = YAML.load`#{xcrc_location_absolute}/xcprepare --configuration #{check_build_configuration} --platform #{check_platform}`
+            Pod::UI.puts prepare_result
             unless prepare_result['result'] || mode != 'consumer'
               # Uninstall the XCRemoteCache for the consumer mode
               disable_xcremotecache(user_project, installer_context.pods_project)
