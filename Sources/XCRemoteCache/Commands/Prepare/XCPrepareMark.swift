@@ -69,6 +69,7 @@ public class XCPrepareMark {
             let networkClient = NetworkClientImpl(
                 session: sessionFactory.build(),
                 retries: config.uploadRetries,
+                retryDelay: config.retryDelay,
                 fileManager: fileManager,
                 awsV4Signature: awsV4Signature
             )
@@ -76,6 +77,7 @@ public class XCPrepareMark {
                 mode: .producer,
                 downloadStreamURL: context.recommendedCacheAddress,
                 upstreamStreamURL: context.cacheAddresses,
+                uploadBatchSize: config.uploadBatchSize,
                 networkClient: networkClient
             ) { [configuration, platform] cacheAddress in
                 // Prepare URLs don't include target name or envFingperint, which are valid only for a target level

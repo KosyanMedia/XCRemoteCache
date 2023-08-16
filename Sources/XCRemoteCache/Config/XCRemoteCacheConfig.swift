@@ -83,6 +83,10 @@ public struct XCRemoteCacheConfig: Encodable {
     var downloadRetries: Int = 0
     /// Number of retries for upload requests
     var uploadRetries: Int = 3
+    /// Delay between retries in seconds
+    var retryDelay: Double = 10.0
+    /// Maximum number of simultaneous requests. 0 means no limits
+    var uploadBatchSize: Int = 0
     /// Extra headers appended to all remote HTTP(S) requests
     var requestCustomHeaders: [String: String] = [:]
     /// Filename (without an extension) of the compilation input file that is used
@@ -107,7 +111,8 @@ public struct XCRemoteCacheConfig: Encodable {
     var turnOffRemoteCacheOnFirstTimeout: Bool = false
     /// List of all extensions that should carry over source fingerprints. Extensions of all product files that
     /// contain non-deterministic content (absolute paths, timestamp, etc) should be included
-    var productFilesExtensionsWithContentOverride = ["swiftmodule"]
+    /// .h files may contain absolute paths if NS_ENUM is used in a public API from Swift code
+    var productFilesExtensionsWithContentOverride = ["swiftmodule", "h"]
     /// If true, plugins for thinning support should be enabled
     var thinningEnabled: Bool = false
     /// Module name of a target that works as a helper for thinned targets
@@ -175,6 +180,8 @@ extension XCRemoteCacheConfig {
         merge.statsDir = scheme.statsDir ?? statsDir
         merge.downloadRetries = scheme.downloadRetries ?? downloadRetries
         merge.uploadRetries = scheme.uploadRetries ?? uploadRetries
+        merge.retryDelay = scheme.retryDelay ?? retryDelay
+        merge.uploadBatchSize = scheme.uploadBatchSize ?? uploadBatchSize
         merge.requestCustomHeaders = scheme.requestCustomHeaders ?? requestCustomHeaders
         merge.thinTargetMockFilename = scheme.thinTargetMockFilename ?? thinTargetMockFilename
         merge.focusedTargets = scheme.focusedTargets ?? focusedTargets
@@ -243,6 +250,8 @@ struct ConfigFileScheme: Decodable {
     let statsDir: String?
     let downloadRetries: Int?
     let uploadRetries: Int?
+    let retryDelay: Double?
+    let uploadBatchSize: Int?
     let requestCustomHeaders: [String: String]?
     let thinTargetMockFilename: String?
     let focusedTargets: [String]?
@@ -291,6 +300,8 @@ struct ConfigFileScheme: Decodable {
         case statsDir = "stats_dir"
         case downloadRetries = "download_retries"
         case uploadRetries = "upload_retries"
+        case retryDelay = "retry_delay"
+        case uploadBatchSize = "upload_batch_size"
         case requestCustomHeaders = "request_custom_headers"
         case thinTargetMockFilename = "thin_target_mock_filename"
         case focusedTargets = "focused_targets"
@@ -357,6 +368,7 @@ class XCRemoteCacheConfigReader {
                 extraConfURL = URL(fileURLWithPath: config.extraConfigurationFile, relativeTo: rootURL)
             } catch {
                 infoLog("Extra config override failed with \(error). Skipping extra configuration")
+                // swiftlint:disable:next unneeded_break_in_switch
                 break
             }
         }
